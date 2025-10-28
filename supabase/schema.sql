@@ -11,10 +11,9 @@ CREATE TABLE analyses (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- posts table: stores individual social media posts
+-- posts table: stores unique social media posts (shared across analyses)
 CREATE TABLE posts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  analysis_id UUID NOT NULL REFERENCES analyses(id) ON DELETE CASCADE,
   source TEXT NOT NULL, -- 'reddit' or 'twitter'
   post_id TEXT NOT NULL, -- original ID from Reddit/Twitter
   text TEXT NOT NULL,
@@ -25,6 +24,14 @@ CREATE TABLE posts (
   subreddit TEXT, -- nullable, only for Reddit
   created_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(post_id, source) -- prevent duplicates
+);
+
+-- analysis_posts: junction table for many-to-many relationship
+CREATE TABLE analysis_posts (
+  analysis_id UUID NOT NULL REFERENCES analyses(id) ON DELETE CASCADE,
+  post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (analysis_id, post_id)
 );
 
 -- classifications table: stores ML classifications for each post
@@ -43,16 +50,20 @@ CREATE TABLE classifications (
 CREATE TABLE insights (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   analysis_id UUID NOT NULL REFERENCES analyses(id) ON DELETE CASCADE,
-  summary TEXT NOT NULL,
+  executive_summary TEXT NOT NULL,
+  key_findings JSONB NOT NULL,
   recommendations JSONB NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  opportunities JSONB NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(analysis_id) -- one set of insights per analysis
 );
 
 -- Indexes for performance
 CREATE INDEX idx_analyses_brand ON analyses(brand_name);
 CREATE INDEX idx_analyses_status ON analyses(status);
-CREATE INDEX idx_posts_analysis ON posts(analysis_id);
 CREATE INDEX idx_posts_source ON posts(source);
 CREATE INDEX idx_posts_timestamp ON posts(timestamp);
+CREATE INDEX idx_analysis_posts_analysis ON analysis_posts(analysis_id);
+CREATE INDEX idx_analysis_posts_post ON analysis_posts(post_id);
 CREATE INDEX idx_classifications_post ON classifications(post_id);
 CREATE INDEX idx_insights_analysis ON insights(analysis_id);
