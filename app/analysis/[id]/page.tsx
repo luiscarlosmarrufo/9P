@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -87,11 +87,40 @@ export default function AnalysisPage() {
   const [selectedSources, setSelectedSources] = useState<string[]>([]);
   const [searchText, setSearchText] = useState("");
 
-  useEffect(() => {
-    loadAnalysisData();
+  const loadInsights = useCallback(async () => {
+    try {
+      const supabase = getSupabaseClientBrowser();
+      const analysisId = params.id as string;
+
+      const { data: insightsData, error } = await supabase
+        .from("insights")
+        .select("*")
+        .eq("analysis_id", analysisId)
+        .single();
+
+      if (error) {
+        if (error.code !== "PGRST116") {
+          // PGRST116 = no rows returned, which is fine
+          console.error("Error loading insights:", error);
+        }
+        return;
+      }
+
+      if (insightsData) {
+        setInsights({
+          executiveSummary: insightsData.executive_summary,
+          keyFindings: insightsData.key_findings,
+          recommendations: insightsData.recommendations,
+          opportunities: insightsData.opportunities,
+        });
+        console.log("✓ Loaded existing insights");
+      }
+    } catch (error) {
+      console.error("Error loading insights:", error);
+    }
   }, [params.id]);
 
-  const loadAnalysisData = async () => {
+  const loadAnalysisData = useCallback(async () => {
     try {
       setLoading(true);
       const supabase = getSupabaseClientBrowser();
@@ -225,40 +254,11 @@ export default function AnalysisPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.id, loadInsights]);
 
-  const loadInsights = async () => {
-    try {
-      const supabase = getSupabaseClientBrowser();
-      const analysisId = params.id as string;
-
-      const { data: insightsData, error } = await supabase
-        .from("insights")
-        .select("*")
-        .eq("analysis_id", analysisId)
-        .single();
-
-      if (error) {
-        if (error.code !== "PGRST116") {
-          // PGRST116 = no rows returned, which is fine
-          console.error("Error loading insights:", error);
-        }
-        return;
-      }
-
-      if (insightsData) {
-        setInsights({
-          executiveSummary: insightsData.executive_summary,
-          keyFindings: insightsData.key_findings,
-          recommendations: insightsData.recommendations,
-          opportunities: insightsData.opportunities,
-        });
-        console.log("✓ Loaded existing insights");
-      }
-    } catch (error) {
-      console.error("Error loading insights:", error);
-    }
-  };
+  useEffect(() => {
+    loadAnalysisData();
+  }, [loadAnalysisData]);
 
   const generateInsights = async () => {
     try {
@@ -941,7 +941,12 @@ export default function AnalysisPage() {
                           cx="50%"
                           cy="50%"
                           labelLine={false}
-                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                          label={(props: any) => {
+                            const { name, value } = props;
+                            const total = sentimentChartData.reduce((sum, entry) => sum + entry.value, 0);
+                            const percent = total > 0 ? (value / total * 100).toFixed(0) : 0;
+                            return `${name}: ${percent}%`;
+                          }}
                           outerRadius={80}
                           fill="#8884d8"
                           dataKey="value"

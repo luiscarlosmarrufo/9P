@@ -352,7 +352,7 @@ export default function Home() {
               </p>
             </div>
             <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-              Unlock deep insights into your brand's social media presence with AI-powered sentiment analysis
+              Unlock deep insights into your brand&apos;s social media presence with AI-powered sentiment analysis
             </p>
           </div>
 

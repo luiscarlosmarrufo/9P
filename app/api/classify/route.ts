@@ -211,7 +211,7 @@ export async function POST(request: NextRequest) {
       }));
 
       console.log(`Processing batch ${i + 1}/${batches} (${batch.length} posts)`);
-      console.log(`Batch post IDs: ${batch.map(p => p.id.substring(0, 8)).join(", ")}...`);
+      console.log(`Batch post IDs: ${batch.map((p: { id: string; text: string; index: number }) => p.id.substring(0, 8)).join(", ")}...`);
 
       try {
         const classifications = await classifyBatch(
@@ -226,7 +226,7 @@ export async function POST(request: NextRequest) {
         allClassifications.push(...classifications);
 
         // Estimate token usage (rough estimate: ~4 chars per token)
-        const batchText = batch.map((p) => p.text).join(" ");
+        const batchText = batch.map((p: { id: string; text: string; index: number }) => p.text).join(" ");
         totalInputTokens += Math.ceil(batchText.length / 4) + 500; // +500 for prompt
         totalOutputTokens += classifications.length * 100; // ~100 tokens per classification
 
