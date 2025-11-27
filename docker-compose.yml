@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      # Supabase credentials (embedded - users don't need to configure)
+      - NEXT_PUBLIC_SUPABASE_URL=https://ilqjhpbjzhyzshlohqxy.supabase.co
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlscWpocGJqemh5enNobG9ocXh5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1OTkxNTIsImV4cCI6MjA3NzE3NTE1Mn0.7RVj4VhFObuGyynZjGsHaQqcmJ0uCiILXWx-djhv8wA
+      - NODE_ENV=production
+    restart: unless-stopped
+    container_name: 9p-analytics
