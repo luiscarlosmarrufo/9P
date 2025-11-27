@@ -8,10 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
-  PieChart, Pie, Cell, BarChart, Bar,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+  PieChart, Pie, Cell, BarChart, Bar, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from "recharts";
-import { Download, ArrowLeft, ExternalLink, Loader2, Sparkles, AlertCircle, TrendingUp, Lightbulb } from "lucide-react";
+import { Download, ArrowLeft, ExternalLink, Loader2, Sparkles, AlertCircle, TrendingUp, Lightbulb, Filter, X } from "lucide-react";
 import { getSupabaseClientBrowser } from "@/lib/supabase";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -80,6 +80,12 @@ export default function AnalysisPage() {
   const [analysisStatus, setAnalysisStatus] = useState("");
   const [insights, setInsights] = useState<Insights | null>(null);
   const [insightsLoading, setInsightsLoading] = useState(false);
+
+  // Filter states
+  const [selectedSentiments, setSelectedSentiments] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedSources, setSelectedSources] = useState<string[]>([]);
+  const [searchText, setSearchText] = useState("");
 
   useEffect(() => {
     loadAnalysisData();
@@ -378,9 +384,44 @@ export default function AnalysisPage() {
     }
   };
 
-  // Calculate metrics
+  // Apply filters
+  const filteredPosts = posts.filter((post) => {
+    // Sentiment filter
+    if (selectedSentiments.length > 0 && post.classifications) {
+      if (!selectedSentiments.includes(post.classifications.sentiment)) {
+        return false;
+      }
+    }
+
+    // Category filter
+    if (selectedCategories.length > 0 && post.classifications) {
+      const hasSelectedCategory = post.classifications.categories.some((cat) =>
+        selectedCategories.includes(cat)
+      );
+      if (!hasSelectedCategory) return false;
+    }
+
+    // Source filter
+    if (selectedSources.length > 0) {
+      if (!selectedSources.includes(post.source)) return false;
+    }
+
+    // Text search
+    if (searchText.trim() !== "") {
+      const searchLower = searchText.toLowerCase();
+      const matchesText = post.text.toLowerCase().includes(searchLower);
+      const matchesAuthor = post.author.toLowerCase().includes(searchLower);
+      const matchesSubreddit = post.subreddit?.toLowerCase().includes(searchLower);
+      if (!matchesText && !matchesAuthor && !matchesSubreddit) return false;
+    }
+
+    return true;
+  });
+
+  // Calculate metrics from filtered posts
   const totalPosts = posts.length;
-  const postsWithClassifications = posts.filter((p) => p.classifications !== null);
+  const filteredTotalPosts = filteredPosts.length;
+  const postsWithClassifications = filteredPosts.filter((p) => p.classifications !== null);
 
   const sentimentBreakdown = postsWithClassifications.reduce(
     (acc, post) => {
@@ -410,11 +451,41 @@ export default function AnalysisPage() {
     {} as Record<string, number>
   );
 
+  // Stacked bar chart data: sentiment breakdown per category
+  const categorySentimentBreakdown: Record<string, { positive: number; neutral: number; negative: number }> = {};
+  postsWithClassifications.forEach((post) => {
+    if (post.classifications?.categories) {
+      post.classifications.categories.forEach((category) => {
+        if (!categorySentimentBreakdown[category]) {
+          categorySentimentBreakdown[category] = { positive: 0, neutral: 0, negative: 0 };
+        }
+        categorySentimentBreakdown[category][post.classifications!.sentiment]++;
+      });
+    }
+  });
+
+  const stackedCategoryData = Object.entries(categorySentimentBreakdown)
+    .map(([category, sentiments]) => ({
+      category,
+      positive: sentiments.positive,
+      neutral: sentiments.neutral,
+      negative: sentiments.negative,
+      total: sentiments.positive + sentiments.neutral + sentiments.negative,
+    }))
+    .sort((a, b) => b.total - a.total);
+
   const categoryData = Object.entries(categoryBreakdown)
     .map(([category, count]) => ({ category, count }))
     .sort((a, b) => b.count - a.count);
 
   const mostMentionedCategory = categoryData[0]?.category || "N/A";
+
+  // Radar chart data for 9Ps
+  const radarData = Object.entries(categoryBreakdown).map(([category, count]) => ({
+    category,
+    value: count,
+    fullMark: Math.max(...Object.values(categoryBreakdown)),
+  }));
 
   const sentimentChartData = [
     { name: "Positive", value: sentimentBreakdown.positive, color: SENTIMENT_COLORS.positive },
@@ -422,14 +493,19 @@ export default function AnalysisPage() {
     { name: "Negative", value: sentimentBreakdown.negative, color: SENTIMENT_COLORS.negative },
   ].filter((item) => item.value > 0);
 
+  // Get unique values for filters
+  const allSentiments = Array.from(new Set(posts.filter(p => p.classifications).map(p => p.classifications!.sentiment)));
+  const allCategories = Array.from(new Set(posts.flatMap(p => p.classifications?.categories || [])));
+  const allSources = Array.from(new Set(posts.map(p => p.source)));
+
   const getSentimentBadgeColor = (sentiment: string) => {
     switch (sentiment) {
       case "positive":
-        return "bg-green-100 text-green-800 border-green-200";
+        return "bg-green-900/50 text-green-300 border-green-500/50";
       case "negative":
-        return "bg-red-100 text-red-800 border-red-200";
+        return "bg-red-900/50 text-red-300 border-red-500/50";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return "bg-gray-800/50 text-gray-300 border-gray-500/50";
     }
   };
 
@@ -458,46 +534,46 @@ export default function AnalysisPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className="text-xl text-gray-700">Loading analysis...</p>
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-purple-400" />
+          <p className="text-xl text-gray-300">Loading analysis...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
           <div>
             <Link href="/">
-              <Button variant="outline" className="mb-4">
+              <Button variant="outline" className="mb-4 border-purple-500/30 hover:bg-purple-500/10">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Home
               </Button>
             </Link>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent">
               {brandName} Analysis
             </h1>
-            <p className="text-gray-600 mt-2">
-              {dateRange} • Status: <span className="font-semibold">{analysisStatus}</span>
+            <p className="text-gray-400 mt-2">
+              {dateRange} • Status: <span className="font-semibold text-purple-300">{analysisStatus}</span>
             </p>
           </div>
-          <Button onClick={exportToCSV} disabled={totalPosts === 0}>
+          <Button onClick={exportToCSV} disabled={totalPosts === 0} className="bg-purple-600 hover:bg-purple-700">
             <Download className="mr-2 h-4 w-4" />
             Export CSV
           </Button>
         </div>
 
         {totalPosts === 0 ? (
-          <Card>
+          <Card className="bg-slate-900/80 border-purple-500/30">
             <CardContent className="py-12 text-center">
-              <p className="text-xl text-gray-600">No data found for this analysis</p>
-              <p className="text-sm text-gray-500 mt-2">The analysis may still be processing or no posts were found.</p>
-              <Button onClick={() => router.push("/")} className="mt-4">
+              <p className="text-xl text-gray-300">No data found for this analysis</p>
+              <p className="text-sm text-gray-400 mt-2">The analysis may still be processing or no posts were found.</p>
+              <Button onClick={() => router.push("/")} className="mt-4 bg-purple-600 hover:bg-purple-700">
                 Start New Analysis
               </Button>
             </CardContent>
@@ -505,15 +581,15 @@ export default function AnalysisPage() {
         ) : (
           <>
             {/* Strategic Insights Section */}
-            <Card className="mb-8 border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50">
+            <Card className="mb-8 border-2 border-purple-500/30 bg-gradient-to-br from-slate-900 to-purple-900/50">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Sparkles className="h-6 w-6 text-purple-600" />
-                    <CardTitle className="text-2xl">Strategic Insights</CardTitle>
+                    <Sparkles className="h-6 w-6 text-purple-400" />
+                    <CardTitle className="text-2xl text-gray-100">Strategic Insights</CardTitle>
                   </div>
                   {insights ? (
-                    <Button onClick={generateInsights} disabled={insightsLoading} variant="outline">
+                    <Button onClick={generateInsights} disabled={insightsLoading} variant="outline" className="border-purple-500/30 hover:bg-purple-500/10 text-gray-200">
                       {insightsLoading ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -524,7 +600,7 @@ export default function AnalysisPage() {
                       )}
                     </Button>
                   ) : (
-                    <Button onClick={generateInsights} disabled={insightsLoading}>
+                    <Button onClick={generateInsights} disabled={insightsLoading} className="bg-purple-600 hover:bg-purple-700">
                       {insightsLoading ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -539,7 +615,7 @@ export default function AnalysisPage() {
                     </Button>
                   )}
                 </div>
-                <CardDescription>
+                <CardDescription className="text-gray-400">
                   AI-powered strategic recommendations based on your brand analysis
                 </CardDescription>
               </CardHeader>
@@ -547,18 +623,18 @@ export default function AnalysisPage() {
                 {insights ? (
                   <div className="space-y-6">
                     {/* Executive Summary */}
-                    <Alert className="bg-white border-blue-200">
-                      <Lightbulb className="h-5 w-5 text-blue-600" />
-                      <AlertTitle className="text-lg">Executive Summary</AlertTitle>
-                      <AlertDescription className="text-base mt-2">
+                    <Alert className="bg-slate-800/50 border-purple-500/30">
+                      <Lightbulb className="h-5 w-5 text-purple-400" />
+                      <AlertTitle className="text-lg text-gray-100">Executive Summary</AlertTitle>
+                      <AlertDescription className="text-base mt-2 text-gray-300">
                         {insights.executiveSummary}
                       </AlertDescription>
                     </Alert>
 
                     {/* Key Findings */}
                     <div>
-                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                        <AlertCircle className="h-5 w-5" />
+                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-100">
+                        <AlertCircle className="h-5 w-5 text-purple-400" />
                         Key Findings
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -567,32 +643,32 @@ export default function AnalysisPage() {
                             key={idx}
                             className={
                               finding.severity === "critical"
-                                ? "bg-red-50 border-red-300"
+                                ? "bg-red-900/30 border-red-500/50"
                                 : finding.severity === "warning"
-                                ? "bg-yellow-50 border-yellow-300"
-                                : "bg-green-50 border-green-300"
+                                ? "bg-yellow-900/30 border-yellow-500/50"
+                                : "bg-green-900/30 border-green-500/50"
                             }
                           >
                             <div className="space-y-2">
                               <div className="flex items-start justify-between">
-                                <AlertTitle className="text-base font-semibold">
+                                <AlertTitle className="text-base font-semibold text-gray-100">
                                   {finding.title}
                                 </AlertTitle>
                                 <Badge
                                   variant="outline"
                                   className={
                                     finding.severity === "critical"
-                                      ? "bg-red-100 text-red-800 border-red-300"
+                                      ? "bg-red-900/50 text-red-300 border-red-500/50"
                                       : finding.severity === "warning"
-                                      ? "bg-yellow-100 text-yellow-800 border-yellow-300"
-                                      : "bg-green-100 text-green-800 border-green-300"
+                                      ? "bg-yellow-900/50 text-yellow-300 border-yellow-500/50"
+                                      : "bg-green-900/50 text-green-300 border-green-500/50"
                                   }
                                 >
                                   {finding.severity}
                                 </Badge>
                               </div>
-                              <p className="text-sm font-medium">{finding.description}</p>
-                              <p className="text-sm text-gray-600">
+                              <p className="text-sm font-medium text-gray-300">{finding.description}</p>
+                              <p className="text-sm text-gray-400">
                                 <strong>Impact:</strong> {finding.impact}
                               </p>
                               <p className="text-xs text-gray-500">
@@ -606,13 +682,13 @@ export default function AnalysisPage() {
 
                     {/* Recommendations */}
                     <div>
-                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                        <TrendingUp className="h-5 w-5" />
+                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-100">
+                        <TrendingUp className="h-5 w-5 text-purple-400" />
                         Recommendations
                       </h3>
                       <div className="space-y-3">
                         {insights.recommendations.map((rec, idx) => (
-                          <Card key={idx} className="bg-white">
+                          <Card key={idx} className="bg-slate-800/50 border-purple-500/30">
                             <CardHeader className="pb-3">
                               <div className="flex items-start justify-between">
                                 <div className="space-y-1">
@@ -620,26 +696,26 @@ export default function AnalysisPage() {
                                     <Badge
                                       className={
                                         rec.priority === "high"
-                                          ? "bg-red-500"
+                                          ? "bg-red-600"
                                           : rec.priority === "medium"
-                                          ? "bg-yellow-500"
-                                          : "bg-blue-500"
+                                          ? "bg-yellow-600"
+                                          : "bg-blue-600"
                                       }
                                     >
                                       {rec.priority} priority
                                     </Badge>
-                                    <Badge variant="outline">{rec.category}</Badge>
+                                    <Badge variant="outline" className="border-purple-500/30 text-gray-300">{rec.category}</Badge>
                                   </div>
-                                  <CardTitle className="text-base">{rec.action}</CardTitle>
+                                  <CardTitle className="text-base text-gray-100">{rec.action}</CardTitle>
                                 </div>
                               </div>
                             </CardHeader>
                             <CardContent className="space-y-2 text-sm">
-                              <p>
-                                <strong className="text-gray-700">Why:</strong> {rec.rationale}
+                              <p className="text-gray-300">
+                                <strong className="text-gray-200">Why:</strong> {rec.rationale}
                               </p>
-                              <p>
-                                <strong className="text-gray-700">Expected Outcome:</strong>{" "}
+                              <p className="text-gray-300">
+                                <strong className="text-gray-200">Expected Outcome:</strong>{" "}
                                 {rec.expectedOutcome}
                               </p>
                             </CardContent>
@@ -650,19 +726,19 @@ export default function AnalysisPage() {
 
                     {/* Opportunities */}
                     <div>
-                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                        <Lightbulb className="h-5 w-5" />
+                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-100">
+                        <Lightbulb className="h-5 w-5 text-purple-400" />
                         Opportunities
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {insights.opportunities.map((opp, idx) => (
-                          <Card key={idx} className="bg-white border-green-200">
+                          <Card key={idx} className="bg-slate-800/50 border-green-500/30">
                             <CardHeader className="pb-3">
-                              <CardTitle className="text-base">{opp.area}</CardTitle>
+                              <CardTitle className="text-base text-gray-100">{opp.area}</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-2 text-sm">
-                              <p>{opp.description}</p>
-                              <p className="text-green-700 font-medium">
+                              <p className="text-gray-300">{opp.description}</p>
+                              <p className="text-green-400 font-medium">
                                 💡 {opp.suggestion}
                               </p>
                             </CardContent>
@@ -673,11 +749,11 @@ export default function AnalysisPage() {
                   </div>
                 ) : (
                   <div className="py-12 text-center">
-                    <Sparkles className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                    <p className="text-gray-600 mb-4">
+                    <Sparkles className="h-12 w-12 mx-auto mb-4 text-purple-400" />
+                    <p className="text-gray-300 mb-4">
                       Generate AI-powered strategic insights to get actionable recommendations for {brandName}
                     </p>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-gray-400">
                       Claude will analyze your data and provide executive summary, key findings, recommendations, and opportunities
                     </p>
                   </div>
@@ -685,35 +761,166 @@ export default function AnalysisPage() {
               </CardContent>
             </Card>
 
+            {/* Filters */}
+            <Card className="mb-6 bg-slate-900/80 border-purple-500/30">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-5 w-5 text-purple-400" />
+                    <CardTitle className="text-gray-100">Filters</CardTitle>
+                  </div>
+                  {(selectedSentiments.length > 0 || selectedCategories.length > 0 || selectedSources.length > 0 || searchText) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-purple-500/30 hover:bg-purple-500/10 text-gray-200"
+                      onClick={() => {
+                        setSelectedSentiments([]);
+                        setSelectedCategories([]);
+                        setSelectedSources([]);
+                        setSearchText("");
+                      }}
+                    >
+                      <X className="mr-2 h-4 w-4" />
+                      Clear All
+                    </Button>
+                  )}
+                </div>
+                <CardDescription className="text-gray-400">
+                  Showing {filteredTotalPosts} of {totalPosts} posts
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  {/* Search */}
+                  <div>
+                    <label className="text-sm font-medium mb-2 block text-gray-300">Search</label>
+                    <input
+                      type="text"
+                      placeholder="Search text, author, subreddit..."
+                      className="w-full px-3 py-2 border border-purple-500/30 rounded-md text-sm bg-slate-800 text-gray-200 placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                      value={searchText}
+                      onChange={(e) => setSearchText(e.target.value)}
+                    />
+                  </div>
+
+                  {/* Sentiment Filter */}
+                  <div>
+                    <label className="text-sm font-medium mb-2 block text-gray-300">Sentiment</label>
+                    <div className="flex flex-wrap gap-2">
+                      {allSentiments.map((sentiment) => (
+                        <Badge
+                          key={sentiment}
+                          variant={selectedSentiments.includes(sentiment) ? "default" : "outline"}
+                          className={`cursor-pointer ${
+                            selectedSentiments.includes(sentiment)
+                              ? sentiment === "positive"
+                                ? "bg-green-600 hover:bg-green-700"
+                                : sentiment === "negative"
+                                ? "bg-red-600 hover:bg-red-700"
+                                : "bg-gray-600 hover:bg-gray-700"
+                              : "border-purple-500/30 text-gray-300 hover:bg-purple-500/10"
+                          }`}
+                          onClick={() => {
+                            setSelectedSentiments((prev) =>
+                              prev.includes(sentiment)
+                                ? prev.filter((s) => s !== sentiment)
+                                : [...prev, sentiment]
+                            );
+                          }}
+                        >
+                          {sentiment}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Category Filter */}
+                  <div>
+                    <label className="text-sm font-medium mb-2 block text-gray-300">Categories</label>
+                    <div className="flex flex-wrap gap-2 max-h-20 overflow-y-auto">
+                      {allCategories.map((category) => (
+                        <Badge
+                          key={category}
+                          variant={selectedCategories.includes(category) ? "default" : "outline"}
+                          className={`cursor-pointer ${
+                            selectedCategories.includes(category)
+                              ? "bg-purple-600 hover:bg-purple-700"
+                              : "border-purple-500/30 text-gray-300 hover:bg-purple-500/10"
+                          }`}
+                          onClick={() => {
+                            setSelectedCategories((prev) =>
+                              prev.includes(category)
+                                ? prev.filter((c) => c !== category)
+                                : [...prev, category]
+                            );
+                          }}
+                        >
+                          {category}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Source Filter */}
+                  <div>
+                    <label className="text-sm font-medium mb-2 block text-gray-300">Source</label>
+                    <div className="flex flex-wrap gap-2">
+                      {allSources.map((source) => (
+                        <Badge
+                          key={source}
+                          variant={selectedSources.includes(source) ? "default" : "outline"}
+                          className={`cursor-pointer ${
+                            selectedSources.includes(source)
+                              ? "bg-purple-600 hover:bg-purple-700"
+                              : "border-purple-500/30 text-gray-300 hover:bg-purple-500/10"
+                          }`}
+                          onClick={() => {
+                            setSelectedSources((prev) =>
+                              prev.includes(source)
+                                ? prev.filter((s) => s !== source)
+                                : [...prev, source]
+                            );
+                          }}
+                        >
+                          {source}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-              <Card>
+              <Card className="bg-slate-900/80 border-purple-500/30">
                 <CardHeader className="pb-3">
-                  <CardDescription>Total Posts</CardDescription>
-                  <CardTitle className="text-3xl">{totalPosts}</CardTitle>
+                  <CardDescription className="text-gray-400">Total Posts</CardDescription>
+                  <CardTitle className="text-3xl text-gray-100">{totalPosts}</CardTitle>
                 </CardHeader>
               </Card>
 
-              <Card>
+              <Card className="bg-slate-900/80 border-purple-500/30">
                 <CardHeader className="pb-3">
-                  <CardDescription>Positive Sentiment</CardDescription>
-                  <CardTitle className="text-3xl text-green-600">
+                  <CardDescription className="text-gray-400">Positive Sentiment</CardDescription>
+                  <CardTitle className="text-3xl text-green-400">
                     {sentimentPercentages.positive}%
                   </CardTitle>
                 </CardHeader>
               </Card>
 
-              <Card>
+              <Card className="bg-slate-900/80 border-purple-500/30">
                 <CardHeader className="pb-3">
-                  <CardDescription>Most Mentioned</CardDescription>
-                  <CardTitle className="text-2xl">{mostMentionedCategory}</CardTitle>
+                  <CardDescription className="text-gray-400">Most Mentioned</CardDescription>
+                  <CardTitle className="text-2xl text-gray-100">{mostMentionedCategory}</CardTitle>
                 </CardHeader>
               </Card>
 
-              <Card>
+              <Card className="bg-slate-900/80 border-purple-500/30">
                 <CardHeader className="pb-3">
-                  <CardDescription>Time Period</CardDescription>
-                  <CardTitle className="text-2xl">{dateRange}</CardTitle>
+                  <CardDescription className="text-gray-400">Time Period</CardDescription>
+                  <CardTitle className="text-2xl text-gray-100">{dateRange}</CardTitle>
                 </CardHeader>
               </Card>
             </div>
@@ -721,9 +928,9 @@ export default function AnalysisPage() {
             {/* Charts */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
               {/* Sentiment Distribution */}
-              <Card>
+              <Card className="bg-slate-900/80 border-purple-500/30">
                 <CardHeader>
-                  <CardTitle>Sentiment Distribution</CardTitle>
+                  <CardTitle className="text-gray-100">Sentiment Distribution</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {sentimentChartData.length > 0 ? (
@@ -743,35 +950,42 @@ export default function AnalysisPage() {
                             <Cell key={`cell-${index}`} fill={entry.color} />
                           ))}
                         </Pie>
-                        <Tooltip />
+                        <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #a855f7', borderRadius: '0.5rem' }} />
                       </PieChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="h-[300px] flex items-center justify-center text-gray-500">
+                    <div className="h-[300px] flex items-center justify-center text-gray-400">
                       No sentiment data available
                     </div>
                   )}
                 </CardContent>
               </Card>
 
-              {/* Category Breakdown */}
-              <Card>
+              {/* Radar Chart - 9Ps Categories */}
+              <Card className="bg-slate-900/80 border-purple-500/30">
                 <CardHeader>
-                  <CardTitle>9Ps Category Breakdown</CardTitle>
+                  <CardTitle className="text-gray-100">9Ps Category Coverage</CardTitle>
+                  <CardDescription className="text-gray-400">Visual representation of category distribution</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {categoryData.length > 0 ? (
+                  {radarData.length > 0 ? (
                     <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={categoryData} layout="vertical">
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis type="number" />
-                        <YAxis dataKey="category" type="category" width={120} />
-                        <Tooltip />
-                        <Bar dataKey="count" fill={CATEGORY_COLOR} />
-                      </BarChart>
+                      <RadarChart data={radarData}>
+                        <PolarGrid stroke="#a855f7" opacity={0.3} />
+                        <PolarAngleAxis dataKey="category" tick={{ fill: '#d1d5db' }} />
+                        <PolarRadiusAxis angle={90} domain={[0, "dataMax"]} tick={{ fill: '#d1d5db' }} />
+                        <Radar
+                          name="Posts"
+                          dataKey="value"
+                          stroke="#a855f7"
+                          fill="#a855f7"
+                          fillOpacity={0.6}
+                        />
+                        <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #a855f7', borderRadius: '0.5rem' }} />
+                      </RadarChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="h-[300px] flex items-center justify-center text-gray-500">
+                    <div className="h-[300px] flex items-center justify-center text-gray-400">
                       No category data available
                     </div>
                   )}
@@ -779,11 +993,39 @@ export default function AnalysisPage() {
               </Card>
             </div>
 
-            {/* Posts Table */}
-            <Card>
+            {/* Stacked Bar Chart - Category Breakdown by Sentiment */}
+            <Card className="mb-8 bg-slate-900/80 border-purple-500/30">
               <CardHeader>
-                <CardTitle>Posts Analysis</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-gray-100">9Ps Categories with Sentiment Breakdown</CardTitle>
+                <CardDescription className="text-gray-400">See sentiment distribution within each category</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {stackedCategoryData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={400}>
+                    <BarChart data={stackedCategoryData} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" stroke="#a855f7" opacity={0.2} />
+                      <XAxis type="number" tick={{ fill: '#d1d5db' }} />
+                      <YAxis dataKey="category" type="category" width={120} tick={{ fill: '#d1d5db' }} />
+                      <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #a855f7', borderRadius: '0.5rem' }} />
+                      <Legend />
+                      <Bar dataKey="positive" stackId="a" fill={SENTIMENT_COLORS.positive} name="Positive" />
+                      <Bar dataKey="neutral" stackId="a" fill={SENTIMENT_COLORS.neutral} name="Neutral" />
+                      <Bar dataKey="negative" stackId="a" fill={SENTIMENT_COLORS.negative} name="Negative" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-[400px] flex items-center justify-center text-gray-400">
+                    No category data available
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Posts Table */}
+            <Card className="bg-slate-900/80 border-purple-500/30">
+              <CardHeader>
+                <CardTitle className="text-gray-100">Posts Analysis</CardTitle>
+                <CardDescription className="text-gray-400">
                   {postsWithClassifications.length} of {totalPosts} posts classified
                 </CardDescription>
               </CardHeader>
@@ -791,34 +1033,34 @@ export default function AnalysisPage() {
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow>
-                        <TableHead>Source</TableHead>
-                        <TableHead>Text</TableHead>
-                        <TableHead>Categories</TableHead>
-                        <TableHead>Sentiment</TableHead>
-                        <TableHead>Engagement</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead></TableHead>
+                      <TableRow className="border-purple-500/30 hover:bg-purple-500/5">
+                        <TableHead className="text-gray-300">Source</TableHead>
+                        <TableHead className="text-gray-300">Text</TableHead>
+                        <TableHead className="text-gray-300">Categories</TableHead>
+                        <TableHead className="text-gray-300">Sentiment</TableHead>
+                        <TableHead className="text-gray-300">Engagement</TableHead>
+                        <TableHead className="text-gray-300">Date</TableHead>
+                        <TableHead className="text-gray-300"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {posts.map((post) => (
-                        <TableRow key={post.id}>
-                          <TableCell className="font-medium">{post.source}</TableCell>
-                          <TableCell className="max-w-md">
+                      {filteredPosts.map((post) => (
+                        <TableRow key={post.id} className="border-purple-500/30 hover:bg-purple-500/5">
+                          <TableCell className="font-medium text-gray-200">{post.source}</TableCell>
+                          <TableCell className="max-w-md text-gray-300">
                             <div className="line-clamp-2">{post.text}</div>
                           </TableCell>
                           <TableCell>
                             {post.classifications ? (
                               <div className="flex flex-wrap gap-1">
                                 {post.classifications.categories.map((cat) => (
-                                  <Badge key={cat} variant="outline" className="text-xs">
+                                  <Badge key={cat} variant="outline" className="text-xs border-purple-500/30 text-gray-300">
                                     {cat}
                                   </Badge>
                                 ))}
                               </div>
                             ) : (
-                              <span className="text-gray-400 text-sm">Not classified</span>
+                              <span className="text-gray-500 text-sm">Not classified</span>
                             )}
                           </TableCell>
                           <TableCell>
@@ -827,16 +1069,16 @@ export default function AnalysisPage() {
                                 {post.classifications.sentiment}
                               </Badge>
                             ) : (
-                              <span className="text-gray-400 text-sm">-</span>
+                              <span className="text-gray-500 text-sm">-</span>
                             )}
                           </TableCell>
-                          <TableCell>{post.engagement}</TableCell>
-                          <TableCell>
+                          <TableCell className="text-gray-300">{post.engagement}</TableCell>
+                          <TableCell className="text-gray-300">
                             {new Date(post.timestamp).toLocaleDateString()}
                           </TableCell>
                           <TableCell>
                             <Link href={post.url} target="_blank">
-                              <Button variant="ghost" size="sm">
+                              <Button variant="ghost" size="sm" className="hover:bg-purple-500/10 text-gray-300">
                                 <ExternalLink className="h-4 w-4" />
                               </Button>
                             </Link>

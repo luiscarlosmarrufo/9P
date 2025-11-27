@@ -337,60 +337,133 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900">
       <Navigation />
-      <div className="min-h-screen flex items-center justify-center pt-16">
-        <Card className="w-full max-w-md mx-4 shadow-xl">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-3xl font-bold text-center bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              9P Social Analytics
-            </CardTitle>
-            <CardDescription className="text-center text-base">
-              Analyze brand sentiment across social media
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="brand-name">Brand Name</Label>
-              <Input
-                id="brand-name"
-                placeholder="e.g., Nike, Apple, Tesla"
-                className="w-full"
-                value={brandName}
-                onChange={(e) => setBrandName(e.target.value)}
+      <div className="container mx-auto px-4 py-16">
+        <div className="max-w-6xl mx-auto">
+          {/* Hero Section */}
+          <div className="text-center mb-16 mt-8">
+            <div className="mb-6">
+              <h1 className="text-8xl md:text-9xl font-black bg-gradient-to-r from-purple-400 via-fuchsia-400 to-purple-600 bg-clip-text text-transparent mb-4 tracking-tight">
+                9P
+              </h1>
+              <p className="text-3xl md:text-4xl font-bold text-white mb-4">
+                Social Analytics
+              </p>
+            </div>
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
+              Unlock deep insights into your brand's social media presence with AI-powered sentiment analysis
+            </p>
+          </div>
+
+          {/* Features Grid */}
+          <div className="grid md:grid-cols-3 gap-6 mb-12">
+            <Card className="bg-slate-900/50 border-purple-500/20 backdrop-blur">
+              <CardHeader>
+                <div className="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center mb-3">
+                  <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </div>
+                <CardTitle className="text-purple-100">9Ps Analysis</CardTitle>
+                <CardDescription className="text-gray-400">
+                  Classify posts across Product, Place, Price, Publicity, Post-consumption, Purpose, Partnerships, People, and Planet
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card className="bg-slate-900/50 border-purple-500/20 backdrop-blur">
+              <CardHeader>
+                <div className="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center mb-3">
+                  <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <CardTitle className="text-purple-100">Sentiment Tracking</CardTitle>
+                <CardDescription className="text-gray-400">
+                  Understand how people feel about your brand with AI-powered sentiment analysis (positive, neutral, negative)
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card className="bg-slate-900/50 border-purple-500/20 backdrop-blur">
+              <CardHeader>
+                <div className="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center mb-3">
+                  <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <CardTitle className="text-purple-100">Strategic Insights</CardTitle>
+                <CardDescription className="text-gray-400">
+                  Get actionable recommendations and identify opportunities to improve your brand strategy
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </div>
+
+          {/* Main Input Card */}
+          <Card className="max-w-2xl mx-auto bg-slate-900/80 border-purple-500/30 backdrop-blur shadow-2xl shadow-purple-500/10">
+            <CardHeader className="space-y-1 pb-6">
+              <CardTitle className="text-2xl font-bold text-center text-purple-100">
+                Start Your Analysis
+              </CardTitle>
+              <CardDescription className="text-center text-gray-400 text-base">
+                Enter a brand name and time range to analyze social media sentiment
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-3">
+                <Label htmlFor="brand-name" className="text-purple-100 text-base">Brand Name</Label>
+                <Input
+                  id="brand-name"
+                  placeholder="e.g., Nike, Apple, Tesla, Starbucks..."
+                  className="w-full h-12 bg-slate-800/50 border-purple-500/30 text-white placeholder:text-gray-500 focus:border-purple-500 focus:ring-purple-500/20"
+                  value={brandName}
+                  onChange={(e) => setBrandName(e.target.value)}
+                  disabled={isLoading}
+                />
+              </div>
+              <div className="space-y-3">
+                <Label htmlFor="time-range" className="text-purple-100 text-base">Time Range</Label>
+                <Select value={timeRange} onValueChange={setTimeRange} disabled={isLoading}>
+                  <SelectTrigger id="time-range" className="h-12 bg-slate-800/50 border-purple-500/30 text-white focus:border-purple-500 focus:ring-purple-500/20">
+                    <SelectValue placeholder="Select time range" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-900 border-purple-500/30">
+                    <SelectItem value="7">Last 7 days</SelectItem>
+                    <SelectItem value="30">Last 30 days</SelectItem>
+                    <SelectItem value="90">Last 90 days</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                className="w-full h-12 bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-700 hover:to-fuchsia-700 text-white font-semibold text-base shadow-lg shadow-purple-500/30"
+                size="lg"
+                onClick={handleAnalyze}
                 disabled={isLoading}
-              />
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Analyzing...
+                  </>
+                ) : (
+                  "Analyze Brand"
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Info Section */}
+          <div className="mt-16 text-center">
+            <p className="text-gray-400 mb-4">Powered by Claude AI • Reddit API • Next.js</p>
+            <div className="flex justify-center gap-4 text-sm text-gray-500">
+              <span>✓ Real-time data</span>
+              <span>✓ AI classification</span>
+              <span>✓ Interactive dashboards</span>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="time-range">Time Range</Label>
-              <Select value={timeRange} onValueChange={setTimeRange} disabled={isLoading}>
-                <SelectTrigger id="time-range">
-                  <SelectValue placeholder="Select time range" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="7">7 days</SelectItem>
-                  <SelectItem value="30">30 days</SelectItem>
-                  <SelectItem value="90">90 days</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Button
-              className="w-full"
-              size="lg"
-              onClick={handleAnalyze}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Analyzing...
-                </>
-              ) : (
-                "Analyze Brand"
-              )}
-            </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );
