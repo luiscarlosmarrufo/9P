@@ -20,6 +20,8 @@ COPY . .
 
 # Set environment variables for build
 ENV NEXT_TELEMETRY_DISABLED 1
+ENV NEXT_PUBLIC_SUPABASE_URL=https://ilqjhpbjzhyzshlohqxy.supabase.co
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlscWpocGJqemh5enNobG9ocXh5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1OTkxNTIsImV4cCI6MjA3NzE3NTE1Mn0.7RVj4VhFObuGyynZjGsHaQqcmJ0uCiILXWx-djhv8wA
 
 # Build the Next.js app
 RUN npm run build
