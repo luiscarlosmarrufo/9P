@@ -44,12 +44,12 @@ export interface ClaudeClassificationResponse {
 
 export const NINE_PS_CATEGORIES = [
   "Product",
-  "Place",
   "Price",
+  "Place",
   "Publicity",
-  "Post-consumption",
-  "Purpose",
-  "Partnerships",
+  "Production",
+  "Pre-Consumption",
+  "Disposal",
+  "Purpose Drive",
   "People",
-  "Planet",
 ] as const;

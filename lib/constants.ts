@@ -12,17 +12,17 @@ export const TIME_RANGES = {
   "90": { days: 90, label: "90 days" },
 } as const;
 
-// 9Ps Marketing Framework Categories
+// 9Ps Sustainability-Focused Marketing Framework Categories
 export const NINE_PS_CATEGORIES = [
   "Product",
   "Price",
   "Place",
-  "Promotion",
+  "Publicity",
+  "Production",
+  "Pre-Consumption",
+  "Disposal",
+  "Purpose Drive",
   "People",
-  "Process",
-  "Physical Evidence",
-  "Performance",
-  "Purpose",
 ] as const;
 
 // Sentiment Types

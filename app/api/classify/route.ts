@@ -19,14 +19,14 @@ interface PostClassification {
 
 const NINE_PS_CATEGORIES = [
   "Product",
-  "Place",
   "Price",
+  "Place",
   "Publicity",
-  "Post-consumption",
-  "Purpose",
-  "Partnerships",
+  "Production",
+  "Pre-Consumption",
+  "Disposal",
+  "Purpose Drive",
   "People",
-  "Planet",
 ];
 
 async function classifyBatch(
@@ -46,18 +46,27 @@ async function classifyBatch(
 
   console.log(`Posts text length: ${postsText.length} characters`);
 
-  const prompt = `You are a marketing analyst. Classify these social media posts about ${brandName} into the 9Ps of marketing and determine sentiment.
+  const prompt = `You are a sustainability-focused marketing analyst. Classify these social media posts about ${brandName} using the 9Ps Sustainability Framework and determine sentiment.
 
-9Ps categories:
-- Product: Features, quality, design, functionality
-- Place: Distribution, availability, location
-- Price: Cost, value, pricing strategy
-- Publicity: Advertising, PR, brand awareness
-- Post-consumption: Customer service, support, returns
-- Purpose: Brand mission, values, social responsibility
-- Partnerships: Collaborations, sponsorships
-- People: Employees, leadership, company culture
-- Planet: Sustainability, environmental impact
+9Ps Sustainability Framework Categories:
+
+1. Product - Transparent production process, ethically sourced raw materials, good manufacturing practices, full traceability. Includes eco-design, durability, ethical sourcing, and recyclability to reduce environmental impact while building trust and long-term value.
+
+2. Price - Fair value creation accounting for environmental costs, social equity, and economic viability. Encourages transparency, affordability, ethical profit margins, and rewards sustainable consumer choices while discouraging overconsumption.
+
+3. Place - Equitable access for all populations, distribution through socially and environmentally responsible channels. Involves local sourcing, low-carbon logistics, inclusive distribution, and ethical partnerships to minimize ecological footprint.
+
+4. Publicity - Total transparency avoiding greenwashing. Communication must be ethical, truthful, educational, and aligned with sustainable brand values to encourage responsible consumer behavior.
+
+5. Production - Ethical, efficient, and low-impact manufacturing processes. Includes renewable energy use, waste reduction, water efficiency, circular design, and fair labor conditions throughout the production chain.
+
+6. Pre-Consumption - Strategies creating positive environmental and social footprint before consumption occurs—starting from production, marketing, and initial customer interaction.
+
+7. Disposal - Post-consumption eco-friendly practices such as recycling, reusing, composting, or redesigning materials to reduce waste and close the sustainability loop within the circular economy.
+
+8. Purpose Drive - Shared intention guiding actions to generate collective well-being, reflected in commercialization and brand behavior.
+
+9. People - Direct, participatory, and transparent relationships with companies, consumers, and stakeholder groups.
 
 For each post, identify ALL relevant categories (can be multiple), sentiment (positive/neutral/negative), confidence score (0-1), and brief reasoning (1 sentence).
 

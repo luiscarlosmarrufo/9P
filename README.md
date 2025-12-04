@@ -30,19 +30,19 @@ Just follow the step-by-step instructions for Windows or Mac!
 3. Run `docker-compose up`
 4. Open http://localhost:3000
 
-## 📚 The 9Ps Marketing Framework
+## 📚 The 9Ps Sustainability Framework
 
-The app classifies social media posts into these categories:
+The app classifies social media posts using a sustainability-focused framework:
 
-1. **Product** - Features, quality, design, innovation
-2. **Price** - Pricing, value, discounts, affordability
-3. **Place** - Distribution, availability, location
-4. **Publicity** - Advertising, PR, brand awareness
-5. **Post-consumption** - Customer service, returns, support
-6. **Purpose** - Brand values, CSR, sustainability
-7. **Partnerships** - Collaborations, sponsorships
-8. **People** - Employees, brand ambassadors, community
-9. **Planet** - Environmental impact, sustainability
+1. **Product** - Transparent production process, ethically sourced materials, eco-design, durability, full traceability, and recyclability
+2. **Price** - Fair value creation accounting for environmental costs, social equity, transparency, and affordability while discouraging overconsumption
+3. **Place** - Equitable access through socially and environmentally responsible channels, local sourcing, low-carbon logistics, and ethical partnerships
+4. **Publicity** - Total transparency avoiding greenwashing, ethical and truthful communication aligned with sustainable values
+5. **Production** - Ethical and efficient manufacturing with renewable energy, waste reduction, water efficiency, and fair labor conditions
+6. **Pre-Consumption** - Strategies creating positive environmental and social footprint before consumption begins
+7. **Disposal** - Post-consumption practices including recycling, reusing, composting, and circular economy principles
+8. **Purpose Drive** - Shared intention guiding actions to generate collective well-being reflected in brand behavior
+9. **People** - Direct, participatory, and transparent relationships with stakeholders and communities
 
 ## 🛠️ Tech Stack
 

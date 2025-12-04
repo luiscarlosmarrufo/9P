@@ -64,7 +64,19 @@ Text: ${post.text.substring(0, 300)}...`;
       })
       .join("\n\n");
 
-    const prompt = `You are a senior brand strategy consultant analyzing social media sentiment for ${body.brandName}.
+    const prompt = `You are a senior sustainability and brand strategy consultant analyzing social media sentiment for ${body.brandName} using the 9Ps Sustainability Framework.
+
+FRAMEWORK CONTEXT:
+The 9Ps Sustainability Framework focuses on:
+1. Product - Transparent, ethical, eco-designed products with full traceability
+2. Price - Fair value including environmental costs and social equity
+3. Place - Equitable access through responsible, low-carbon distribution
+4. Publicity - Transparent, truthful communication avoiding greenwashing
+5. Production - Ethical manufacturing with renewable energy and fair labor
+6. Pre-Consumption - Positive footprint before consumption begins
+7. Disposal - Circular economy practices (recycling, reusing, composting)
+8. Purpose Drive - Collective well-being and sustainable brand behavior
+9. People - Direct, transparent relationships with stakeholders
 
 ANALYSIS SUMMARY:
 - Time Period: ${body.stats.timeRange}
@@ -76,7 +88,7 @@ ANALYSIS SUMMARY:
 SAMPLE HIGH-ENGAGEMENT POSTS:
 ${samplePostsText}
 
-TASK: Provide strategic recommendations in this exact JSON format (respond with ONLY the JSON, no other text):
+TASK: Provide strategic recommendations aligned with sustainability principles in this exact JSON format (respond with ONLY the JSON, no other text):
 {
   "executiveSummary": "2-3 sentence overview of brand health",
   "keyFindings": [
@@ -107,11 +119,12 @@ TASK: Provide strategic recommendations in this exact JSON format (respond with 
 }
 
 Focus on:
-- Actionable recommendations (not just observations)
-- Prioritize by business impact
+- Actionable sustainability-aligned recommendations (not just observations)
+- Prioritize by business impact and environmental/social value
 - Use specific data from the analysis
-- Identify both risks and opportunities
+- Identify both risks and opportunities through a sustainability lens
 - Keep recommendations concrete and measurable
+- Consider the 9Ps framework when making suggestions
 - Generate 3-5 key findings, 4-6 recommendations, and 2-4 opportunities`;
 
     console.log("Sending request to Anthropic API for insights...");
